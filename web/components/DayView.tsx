@@ -30,6 +30,7 @@ import InboxColumn from "@/components/InboxColumn";
 import DayNav from "@/components/DayNav";
 import CopyYesterdayModal from "@/components/CopyYesterdayModal";
 import HabitsRail from "@/components/HabitsRail";
+import CatchUpSheet from "@/components/CatchUpSheet";
 import type { BoardHabit } from "@/lib/habits/dto";
 import {
   addTask, addIdea, setDone, updateTask, updateIdea, deleteTask, deleteIdea,
@@ -499,6 +500,9 @@ export default function DayView({
       </DragOverlay>
 
       {showCopy && <CopyYesterdayModal day={day} onClose={() => setShowCopy(false)} />}
+
+      {/* once per session; only refresh the board if the shown day was logged in the sheet */}
+      {initialHabits && <CatchUpSheet onClose={(saved) => saved.has(day) && router.refresh()} />}
     </DndContext>
   );
 }
