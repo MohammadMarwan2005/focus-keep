@@ -8,6 +8,7 @@
     "start": "next start",
     "db:push": "drizzle-kit push",
     "seed": "tsx scripts/seed.ts",
+    "seed:habits": "tsx scripts/seed-habits.ts",
     "test": "tsx --test lib/habits/*.test.ts"
   },
   "dependencies": {
