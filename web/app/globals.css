@@ -1,0 +1,167 @@
+@import "tailwindcss";
+@import "@fontsource/aref-ruqaa/400.css";
+@import "@fontsource/aref-ruqaa/700.css";
+@import "@fontsource/ibm-plex-sans-arabic/300.css";
+@import "@fontsource/ibm-plex-sans-arabic/400.css";
+@import "@fontsource/ibm-plex-sans-arabic/500.css";
+@import "@fontsource/ibm-plex-sans-arabic/700.css";
+
+/* dark mode is class-based: <html class="dark"> */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ============================================================= */
+/* Semantic tokens — swapped under .dark. Day = golden-hour       */
+/* scrapbook; night = deep dark ("darker at night").              */
+/* ============================================================= */
+:root {
+  --bg: #faf6ef;
+  --surface: #ffffff;
+  --surface-2: #f3ecdf;
+  --ink: #3e322c;
+  /* darkened ~18% from #6b5d54 so 11–13px secondary text clears WCAG AA (4.5:1) */
+  --ink-soft: #574a41;
+  --border: rgb(62 50 44 / 0.14);
+  --accent: #d19a35;
+  --accent-2: #c48b97;
+  --grain: rgb(62 50 44 / 0.035);
+
+  /* Eisenhower quadrant washes + labels */
+  --q-do-bg: #f6e2e5;
+  --q-do-ink: #b1546a;
+  --q-schedule-bg: #e7efe1;
+  --q-schedule-ink: #5f7d4f;
+  --q-delegate-bg: #f8edd2;
+  --q-delegate-ink: #a9791c;
+  --q-delete-bg: #efe8dd;
+  --q-delete-ink: #877a6d;
+
+  --shadow-card: 0 2px 10px rgb(62 50 44 / 0.1);
+  --shadow-pop: 0 10px 30px rgb(62 50 44 / 0.22), 0 2px 6px rgb(62 50 44 / 0.14);
+
+  --font-heading: "Aref Ruqaa", serif;
+  --font-body: "IBM Plex Sans Arabic", sans-serif;
+}
+
+.dark {
+  --bg: #100e18;
+  --surface: #1c1930;
+  --surface-2: #272341;
+  --ink: #ece7f5;
+  --ink-soft: #a79fc0;
+  --border: rgb(255 255 255 / 0.09);
+  --accent: #e8b04b;
+  --accent-2: #d8a7b1;
+  --grain: rgb(255 255 255 / 0.025);
+
+  --q-do-bg: rgb(196 88 107 / 0.16);
+  --q-do-ink: #ec9aa8;
+  --q-schedule-bg: rgb(111 138 95 / 0.16);
+  --q-schedule-ink: #a9c99b;
+  --q-delegate-bg: rgb(232 176 75 / 0.14);
+  --q-delegate-ink: #e8c07a;
+  --q-delete-bg: rgb(255 255 255 / 0.05);
+  --q-delete-ink: #b6adc7;
+
+  --shadow-card: 0 2px 10px rgb(0 0 0 / 0.4);
+  --shadow-pop: 0 14px 34px rgb(0 0 0 / 0.55), 0 2px 6px rgb(0 0 0 / 0.4);
+}
+
+/* map semantic tokens into Tailwind color utilities (bg-surface, text-ink, …) */
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-line: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-2: var(--accent-2);
+
+  --color-q-do-bg: var(--q-do-bg);
+  --color-q-do-ink: var(--q-do-ink);
+  --color-q-schedule-bg: var(--q-schedule-bg);
+  --color-q-schedule-ink: var(--q-schedule-ink);
+  --color-q-delegate-bg: var(--q-delegate-bg);
+  --color-q-delegate-ink: var(--q-delegate-ink);
+  --color-q-delete-bg: var(--q-delete-bg);
+  --color-q-delete-ink: var(--q-delete-ink);
+
+  --font-heading: var(--font-heading);
+  --font-body: var(--font-body);
+}
+
+html {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--ink);
+  color-scheme: light;
+}
+.dark html,
+html.dark {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  transition: background-color 0.4s ease, color 0.4s ease;
+}
+
+.font-heading {
+  font-family: var(--font-heading);
+}
+
+/* paper grain overlay (softer in the dark) */
+.paper-grain {
+  background-image: radial-gradient(var(--grain) 1px, transparent 1px);
+  background-size: 5px 5px;
+}
+
+/* subtle golden-hour glow behind the board */
+.hour-glow {
+  background:
+    radial-gradient(ellipse at 15% 0%, rgb(232 176 75 / 0.10), transparent 55%),
+    radial-gradient(ellipse at 90% 100%, rgb(196 139 151 / 0.10), transparent 55%);
+}
+.dark .hour-glow {
+  background:
+    radial-gradient(ellipse at 15% 0%, rgb(232 176 75 / 0.07), transparent 55%),
+    radial-gradient(ellipse at 90% 100%, rgb(120 90 150 / 0.14), transparent 55%);
+}
+
+.shadow-card { box-shadow: var(--shadow-card); }
+.shadow-pop { box-shadow: var(--shadow-pop); }
+
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { scrollbar-width: none; }
+
+/* gentle float for the empty-quadrant hint */
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-0.35rem); }
+}
+.animate-float-soft { animation: float-soft 5s ease-in-out infinite; }
+
+/* a card being dragged */
+.dragging { opacity: 0.45; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+html, body { max-width: 100%; overflow-x: clip; }
+
+/* notepad editor: each line is its own block so it can carry its own dir */
+.np-editor > div { min-height: 1.6em; }
+
+/* Touch devices: no hover, so controls that reveal on hover must stay visible,
+   and interactive controls need ≥44px hit areas (M2, M3). */
+@media (hover: none) {
+  .tap-visible { opacity: 1 !important; }
+  .tap-target { min-width: 44px; min-height: 44px; }
+  /* hover-only affordances that have a menu equivalent on touch (N3) */
+  .hide-on-touch { display: none !important; }
+}

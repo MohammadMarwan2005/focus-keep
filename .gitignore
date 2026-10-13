@@ -1,0 +1,20 @@
+# dependencies
+node_modules/
+
+# next.js build output
+.next/
+
+# environment / secrets
+.env
+.env.*
+
+# runtime data (user uploads). The app stores it at the repo root (see web/lib/stream.ts),
+# so both the real location and web/data/ are excluded.
+/data/
+web/data/
+
+# logs
+*.log
+
+# macOS
+.DS_Store
