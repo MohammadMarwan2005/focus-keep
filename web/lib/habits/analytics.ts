@@ -52,9 +52,11 @@ export function weekdayBreakdown(days: readonly { day: string; outcome: Outcome 
 export type HeatLevel = "success" | "partial" | "failure" | "skipped" | "unknown";
 export type HeatCell = { day: string; outcome: Outcome; closeness: number | null; level: HeatLevel };
 
-/** Partial = a miss that got at least halfway (by closeness). */
+/** A miss this close to the goal (by closeness) is shown as partial rather than failure. */
+export const PARTIAL_THRESHOLD = 0.75;
+
 export function heatLevel(outcome: Outcome, closeness: number | null): HeatLevel {
-  if (outcome === "failure") return closeness != null && closeness >= 0.5 ? "partial" : "failure";
+  if (outcome === "failure") return closeness != null && closeness >= PARTIAL_THRESHOLD ? "partial" : "failure";
   return outcome;
 }
 

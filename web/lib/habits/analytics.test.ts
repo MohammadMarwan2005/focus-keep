@@ -41,11 +41,12 @@ test("weekdayBreakdown groups by zone-independent weekday", () => {
   assert.deepEqual(stats[3], { weekday: 3, rate: null, recorded: 0 });
 });
 
-test("heatLevel: partial is a miss that got at least halfway", () => {
+test("heatLevel: partial is a near miss (closeness >= 0.75)", () => {
   assert.equal(heatLevel("success", 1), "success");
+  assert.equal(heatLevel("failure", 0.9), "partial");
   assert.equal(heatLevel("failure", 0.75), "partial");
-  assert.equal(heatLevel("failure", 0.5), "partial");
-  assert.equal(heatLevel("failure", 0.49), "failure");
+  assert.equal(heatLevel("failure", 0.74), "failure");
+  assert.equal(heatLevel("failure", 0.5), "failure");
   assert.equal(heatLevel("failure", null), "failure");
   assert.equal(heatLevel("skipped", null), "skipped");
   assert.equal(heatLevel("unknown", null), "unknown");
@@ -60,7 +61,7 @@ test("heatmapRange: first of the month two months back, across a year boundary",
 test("buildHeatmap lays days into Saturday-first week columns with padding", () => {
   // 2026-10-01 is a Thursday → first column has Sat..Wed empty, Thu/Fri filled
   const weeks = buildHeatmap(
-    { "2026-10-01": { outcome: "success", closeness: 1 }, "2026-10-03": { outcome: "failure", closeness: 0.6 } },
+    { "2026-10-01": { outcome: "success", closeness: 1 }, "2026-10-03": { outcome: "failure", closeness: 0.8 } },
     "2026-10-01", "2026-10-04",
   );
   assert.equal(weeks.length, 2);

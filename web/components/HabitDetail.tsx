@@ -8,6 +8,7 @@ import { contentOf } from "@/lib/habits/bidi";
 import type { EntryDTO, HabitDTO, MistakeDTO } from "@/lib/habits/dto";
 import { BidiText } from "@/components/BidiField";
 import HabitForm from "@/components/HabitForm";
+import HabitAnalytics from "@/components/HabitAnalytics";
 import HabitIcon from "@/components/HabitIcon";
 import { habitSummary } from "@/components/HabitsList";
 import PageHeader from "@/components/PageHeader";
@@ -67,7 +68,7 @@ export default function HabitDetail({
           </div>
         )}
 
-        <HabitAnalyticsSlot habit={habit} today={today} entries={entries} mistakes={mistakes} />
+        <HabitAnalytics habit={habit} today={today} entries={entries} mistakes={mistakes} />
 
         <section className="rounded-2xl border border-line bg-surface">
           <button
@@ -95,9 +96,4 @@ export default function HabitDetail({
       </main>
     </div>
   );
-}
-
-/* Analytics are added in a later step; this keeps the page layout stable meanwhile. */
-function HabitAnalyticsSlot(_props: { habit: HabitDTO; today: string; entries: EntryDTO[]; mistakes: MistakeDTO[] }) {
-  return null;
 }

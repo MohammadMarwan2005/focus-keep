@@ -175,3 +175,9 @@ html, body { max-width: 100%; overflow-x: clip; }
   opacity: 0.6;
   pointer-events: none;
 }
+
+/* habit heatmap: skipped days are neutral, drawn as a hatch */
+.heat-skipped {
+  background: repeating-linear-gradient(45deg, var(--surface-2) 0 2px, var(--border) 2px 4px);
+  border: 1px solid var(--border);
+}
