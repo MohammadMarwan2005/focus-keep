@@ -44,6 +44,18 @@ Notes you archive disappear from the inbox and the notepad list but live here on
 **deleted permanently** (حذف نهائي) — both undoable. Archiving is a soft-delete
 flag (`ideas.archived`), not a separate table.
 
+### Habits (`/habits`, and the left rail on the day board)
+Track daily habits, either yes/no or measured against a goal (e.g. sleep at least
+7.5 hours, screen time at most 2 hours). Log from the **habits rail** on the left of
+the board, which follows the day navigation. Each day can carry notes and
+**mistakes** picked from a per-habit catalog. A **catch-up sheet** asks once per
+session about unlogged days from the last 14. Each habit has an **analytics** page
+(`/habits/[id]`) with streaks, success rate, a 3-month heatmap, a value chart with
+the goal line, a weekday breakdown and the mistake correlation. The catalog lives
+at `/habits/mistakes`, and the timezone is set at `/settings`. Habit days are
+calendar dates in the user's timezone (`users.timezone`), and success is always
+derived, never stored.
+
 ### Across the app
 - **Auth:** single password-protected user now (JWT via `jose` + `bcryptjs`), but
   every row carries `user_id` so multi-user is a later flip. Routes are protected by
@@ -72,6 +84,10 @@ flag (`ideas.archived`), not a separate table.
 - **`ideas`** — id, user_id, title, note, line_dirs, **archived**, position,
   timestamps; indexed on user_id. (Backs both the inbox and the notepad.)
 - **`settings`** — simple k/v (theme music path, sound default)
+- **`habits`**, **`habit_goals`** (versioned by `effective_from`), **`habit_entries`**
+  (one per habit and day), **`mistakes`**, **`entry_mistakes`**, plus
+  `users.timezone`. They are created by `web/scripts/migrate-habits.mjs`. Habit
+  icons are stored under `data/habits/<user_id>/`.
 
 ---
 
@@ -100,19 +116,29 @@ npm run build      # next build  (on the server use ./build-safe.sh instead — 
 npm run start      # next start
 npm run db:push    # drizzle-kit push (sync schema to MySQL)
 npm run seed       # create/seed the single user
+npm test           # unit tests for lib/habits (node:test via tsx)
+npm run seed:habits  # demo user test2 with 60 days of habits (needs SEED_TEST2_PASSWORD)
 ```
 
 ## Deploy (on the shared box)
 
-The box is tight on RAM/disk, so **never run a bare `next build`** there. Use the
-RAM-capped wrapper, then restart pm2:
+The box is tight on RAM/disk, so **never run a bare `next build`** there. Pull,
+install, migrate, then use the RAM-capped wrapper and restart pm2:
 
 ```bash
-cd /var/www/yawmi/web
-../build-safe.sh          # systemd-run scoped cgroup: MemoryMax ~2.3G, niced, heap-capped
-pm2 restart yawmi
-pm2 save
+cd /var/www/yawmi && git pull
+cd web && npm ci
+node scripts/migrate-habits.mjs
+SEED_TEST2_PASSWORD=... npm run seed:habits    # optional, test data only
+../build-safe.sh
+pm2 restart yawmi && pm2 save
 ```
+
+- `migrate-habits.mjs` is idempotent (`CREATE TABLE IF NOT EXISTS` plus a guarded
+  `ADD COLUMN`), so re-running it on every deploy is safe. Don't use
+  `npm run db:push` against the live DB.
+- `seed:habits` replaces the `test2` user's habit data; skip it in production
+  unless you want the demo account.
 
 `build-safe.sh` adds temporary swap, caps the Node heap
 (`NODE_OPTIONS=--max-old-space-size=1536`), runs the build niced under a memory-limited
