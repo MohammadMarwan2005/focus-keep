@@ -11,7 +11,7 @@ import {
 import { arrayMove, sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import {
   CloudSun, NotebookPen, CopyPlus, LogOut, MoreVertical, SunMoon,
-  Music, Volume2, VolumeX, ChevronDown,
+  Music, Volume2, VolumeX, ChevronDown, ListChecks, Settings2,
 } from "lucide-react";
 
 import { QUADRANTS, type Quadrant } from "@/db/schema";
@@ -375,6 +375,8 @@ export default function DayView({
 
   const mobileMenu: MenuItem[] = [
     { label: "المفكرة", icon: <NotebookPen size={15} />, onClick: () => router.push("/notepad") },
+    { label: "العادات", icon: <ListChecks size={15} />, onClick: () => router.push("/habits") },
+    { label: "الإعدادات", icon: <Settings2 size={15} />, onClick: () => router.push("/settings") },
     { label: "نسخ من أمس", icon: <CopyPlus size={15} />, onClick: () => setShowCopy(true) },
     { label: muted ? "تشغيل الصوت" : "كتم الصوت", icon: muted ? <VolumeX size={15} /> : <Volume2 size={15} />, onClick: toggleMute },
     { label: "رفع نغمة الخلفية", icon: <Music size={15} />, onClick: () => fileRef.current?.click() },
@@ -415,10 +417,16 @@ export default function DayView({
               <Link href="/notepad" title="المفكرة" aria-label="المفكرة" className={iconBtn}>
                 <NotebookPen size={18} aria-hidden />
               </Link>
+              <Link href="/habits" title="العادات" aria-label="العادات" className={iconBtn}>
+                <ListChecks size={18} aria-hidden />
+              </Link>
               <SoundMenu />
               <ThemeToggle />
               <Menu
-                items={[{ label: "تسجيل الخروج", icon: <LogOut size={15} />, danger: true, onClick: logout }]}
+                items={[
+                  { label: "الإعدادات", icon: <Settings2 size={15} />, onClick: () => router.push("/settings") },
+                  { label: "تسجيل الخروج", icon: <LogOut size={15} />, danger: true, onClick: logout },
+                ]}
                 triggerLabel="حسابي"
                 triggerClassName="flex items-center gap-1.5 rounded-full bg-surface-2 border border-line px-3 py-2 text-sm text-ink hover:border-accent transition"
               >

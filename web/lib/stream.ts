@@ -14,6 +14,12 @@ const MIME: Record<string, string> = {
   ".opus": "audio/opus",
   ".wav": "audio/wav",
   ".webm": "audio/webm",
+  // habit icons (data/habits/<uid>/)
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".webp": "image/webp",
+  ".svg": "image/svg+xml",
 };
 
 export function safeDataPath(rel: string): string | null {

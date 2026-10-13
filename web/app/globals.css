@@ -165,3 +165,13 @@ html, body { max-width: 100%; overflow-x: clip; }
   /* hover-only affordances that have a menu equivalent on touch (N3) */
   .hide-on-touch { display: none !important; }
 }
+
+/* BidiField: per-line blocks like the notepad, plus a placeholder */
+.bidi-field > div { min-height: 1.5em; }
+.bidi-field[data-empty="true"]::before {
+  content: attr(data-placeholder);
+  position: absolute;
+  color: var(--ink-soft);
+  opacity: 0.6;
+  pointer-events: none;
+}

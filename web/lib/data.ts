@@ -68,6 +68,11 @@ export async function loadDay(userId: number, day: string): Promise<DayData> {
 
 /** The user's IANA timezone, falling back to the default until one is stored. */
 export async function loadUserTimezone(userId: number): Promise<string> {
-  const [row] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, userId));
-  return row?.tz && isValidTimezone(row.tz) ? row.tz : DEFAULT_TIMEZONE;
+  try {
+    const [row] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, userId));
+    return row?.tz && isValidTimezone(row.tz) ? row.tz : DEFAULT_TIMEZONE;
+  } catch {
+    // users.timezone missing until scripts/migrate-habits.mjs runs — keep the board up
+    return DEFAULT_TIMEZONE;
+  }
 }

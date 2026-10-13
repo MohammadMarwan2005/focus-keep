@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { db, users } from "@/db";
 import { isValidTimezone } from "@/lib/date";
 import { COOKIE_NAME, signSession } from "@/lib/auth";
@@ -30,14 +30,20 @@ export async function POST(req: NextRequest) {
   }
 
   const password_hash = await bcrypt.hash(password, 10);
-  const [res] = await db.insert(users).values({
-    username,
-    password_hash,
-    name: name || username,
-    role: "user",
-    timezone,
-  });
-  const uid = Number((res as { insertId: number }).insertId);
+  // Explicit column list: drizzle's insert names every schema column (users.timezone
+  // included), which would fail on a DB where migrate-habits.mjs hasn't run yet.
+  const [res] = await db.execute(
+    sql`INSERT INTO users (username, password_hash, name, role) VALUES (${username}, ${password_hash}, ${name || username}, 'user')`,
+  );
+  const uid = Number((res as unknown as { insertId: number }).insertId);
+  if (timezone) {
+    // separate statement so signup still works before the habits migration has run
+    try {
+      await db.update(users).set({ timezone }).where(eq(users.id, uid));
+    } catch (e) {
+      console.error("could not store timezone (run scripts/migrate-habits.mjs?)", e);
+    }
+  }
 
   const token = await signSession({ uid, username, role: "user", name: name || username });
   const out = NextResponse.json({ ok: true });
