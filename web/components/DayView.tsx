@@ -29,6 +29,8 @@ import Column from "@/components/Column";
 import InboxColumn from "@/components/InboxColumn";
 import DayNav from "@/components/DayNav";
 import CopyYesterdayModal from "@/components/CopyYesterdayModal";
+import HabitsRail from "@/components/HabitsRail";
+import type { BoardHabit } from "@/lib/habits/dto";
 import {
   addTask, addIdea, setDone, updateTask, updateIdea, deleteTask, deleteIdea,
   reorderQuadrant, reorderIdeas, moveTaskToDay, taskToIdea, ideaToTask,
@@ -57,13 +59,15 @@ function build(quadrants: Record<Quadrant, TaskRow[]>, ideas: IdeaRow[]): Cols {
 }
 
 export default function DayView({
-  day, today, name, initialQuadrants, initialIdeas,
+  day, today, name, initialQuadrants, initialIdeas, initialHabits,
 }: {
   day: string;
   today: string;
   name: string;
   initialQuadrants: Record<Quadrant, TaskRow[]>;
   initialIdeas: IdeaRow[];
+  /** null when the habit tables aren't available — the rail is hidden */
+  initialHabits: BoardHabit[] | null;
 }) {
   const router = useRouter();
   const { chime, whoosh, tick } = useSound();
@@ -395,7 +399,7 @@ export default function DayView({
     >
       <div className="hour-glow min-h-screen lg:h-screen lg:overflow-hidden flex flex-col">
         <header className="shrink-0 sticky top-0 z-30 backdrop-blur bg-bg/80 border-b border-line">
-          <div className="max-w-6xl mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-1.5 sm:gap-2">
+          <div className={`${initialHabits ? "max-w-7xl" : "max-w-6xl"} mx-auto px-3 sm:px-4 py-2 sm:py-2.5 flex items-center justify-between gap-1.5 sm:gap-2`}>
             {/* logo is decorative — hidden on phones so the header stays one row (N8) */}
             <div className="hidden sm:flex items-center gap-2 shrink-0">
               <CloudSun size={26} className="text-accent" aria-hidden />
@@ -448,7 +452,13 @@ export default function DayView({
           </div>
         </header>
 
-        <main className="flex-1 lg:min-h-0 max-w-6xl w-full mx-auto px-4 py-4 grid gap-4 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <main
+          className={`flex-1 lg:min-h-0 w-full mx-auto px-4 py-4 grid gap-4 ${
+            initialHabits
+              ? "max-w-7xl lg:grid-cols-[15rem_minmax(0,1fr)_15rem] xl:grid-cols-[17rem_minmax(0,1fr)_17rem]"
+              : "max-w-6xl lg:grid-cols-[18rem_minmax(0,1fr)]"
+          }`}
+        >
           {/* ideas rail first in the DOM so, under RTL, it sits on the right */}
           <InboxColumn
             items={cols.inbox ?? []}
@@ -474,6 +484,9 @@ export default function DayView({
               />
             ))}
           </div>
+
+          {/* habits rail last in the DOM so, under RTL, it sits on the left (counterpart of ideas) */}
+          {initialHabits && <HabitsRail day={day} today={today} habits={initialHabits} />}
         </main>
       </div>
 
