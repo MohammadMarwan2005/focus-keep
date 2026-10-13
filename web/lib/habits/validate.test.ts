@@ -60,9 +60,9 @@ test("resolveToday: client date must be within a day of the server's date in the
   good(resolveToday(undefined, "2026-10-13"), "2026-10-13");
   good(resolveToday("", "2026-10-13"), "2026-10-13");
   good(resolveToday("2026-10-13", "2026-10-13"), "2026-10-13");
-  good(resolveToday("2026-10-14", "2026-10-13"), "2026-10-14"); // midnight race, client ahead
+  good(resolveToday("2026-10-14", "2026-10-13"), "2026-10-13"); // client ahead: clamped, no logging tomorrow
   good(resolveToday("2026-10-12", "2026-10-13"), "2026-10-12"); // client behind
-  good(resolveToday("2026-01-01", "2025-12-31"), "2026-01-01"); // year boundary
+  good(resolveToday("2025-12-31", "2026-01-01"), "2025-12-31"); // year boundary, client behind
   bad(resolveToday("2026-10-15", "2026-10-13"));
   bad(resolveToday("2026-10-11", "2026-10-13"));
   bad(resolveToday("nope", "2026-10-13"));

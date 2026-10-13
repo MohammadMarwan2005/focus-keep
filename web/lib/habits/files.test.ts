@@ -33,6 +33,12 @@ test("checkSvg rejects scripts, handlers, foreignObject and external refs", () =
   assert.ok(check(`<svg><style>@import "https://evil.example/a.css";</style></svg>`));
   assert.ok(check(`<svg><a href="javascript:alert(1)"><path/></a></svg>`));
   assert.ok(check(`<!DOCTYPE svg [<!ENTITY x "y">]><svg/>`));
+  // bypasses found in review: entity-encoded scheme via <set>, namespaced handler
+  assert.ok(check(`<svg><a href="#x"><set attributeName="href" to="&#106;avascript:alert(1)"/><text>x</text></a></svg>`));
+  assert.ok(check(`<svg><set attributeName="href" to="javascript:x"/></svg>`));
+  assert.ok(check(`<svg><animate attributeName="href" values="x"/></svg>`));
+  assert.ok(check(`<svg xmlns:x="u"><path x:onload="alert(1)"/></svg>`));
+  assert.ok(check(`<svg><path d="M0 0" fill="&#x23;000"/></svg>`));
   assert.ok(check(`not an svg`));
 });
 

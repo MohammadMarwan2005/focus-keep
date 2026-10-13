@@ -131,7 +131,9 @@ export function resolveToday(clientToday: unknown, serverToday: string): Validat
   if (Math.abs(diffDaysISO(serverToday, c)) > 1) {
     return fail("تاريخ جهازك لا يطابق منطقتك الزمنية؛ تحقّق من إعدادات الوقت");
   }
-  return ok(c);
+  // the stored zone is authoritative for the upper bound: a device that is a
+  // day ahead must not unlock "tomorrow" or date a goal version early
+  return ok(c < serverToday ? c : serverToday);
 }
 
 export function validateTimezone(v: unknown): Validation<string> {

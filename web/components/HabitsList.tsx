@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Link from "next/link";
 import {
   DndContext, PointerSensor, TouchSensor, KeyboardSensor, useSensor, useSensors, closestCenter,
@@ -79,6 +79,9 @@ export default function HabitsList({
 }) {
   const toast = useToast();
   const [active, setActive] = useState(initialActive);
+  // the toast's Undo runs later, so it reads the list through a ref, not a stale closure
+  const activeRef = useRef(active);
+  activeRef.current = active;
   const [archived, setArchived] = useState(initialArchived);
   const [adding, setAdding] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
@@ -94,24 +97,36 @@ export default function HabitsList({
     const from = active.findIndex((h) => h.id === e.active.id);
     const to = active.findIndex((h) => h.id === e.over!.id);
     if (from < 0 || to < 0) return;
-    const next = arrayMove(active, from, to);
+    // keep position in step with the server so later restores / rollbacks sort correctly
+    const next = arrayMove(active, from, to).map((h, i) => ({ ...h, position: i }));
     setActive(next);
     const res = await reorderHabits(next.map((h) => h.id));
     if (!res.ok) toast.show(res.error);
   }
 
-  async function restore(h: HabitDTO, silent = false) {
+  /** Restore from the archive (appended), or for an Undo put it back at `undoIndex`. */
+  async function restore(h: HabitDTO, undoIndex?: number) {
     const res = await unarchiveHabit(h.id);
     if (!res.ok) {
       toast.show(res.error);
       return;
     }
     setArchived((p) => p.filter((x) => x.id !== h.id));
-    setActive((p) => [...p.filter((x) => x.id !== h.id), res.data].sort((a, b) => a.position - b.position || a.id - b.id));
-    if (!silent) toast.show("تمت استعادة العادة");
+    if (undoIndex === undefined) {
+      setActive((p) => [...p.filter((x) => x.id !== h.id), res.data]);
+      toast.show("تمت استعادة العادة");
+      return;
+    }
+    const rest = activeRef.current.filter((x) => x.id !== h.id);
+    rest.splice(Math.min(undoIndex, rest.length), 0, res.data);
+    const order = rest.map((x, i) => ({ ...x, position: i }));
+    setActive(order);
+    const r = await reorderHabits(order.map((x) => x.id));
+    if (!r.ok) toast.show(r.error);
   }
 
   async function archive(h: HabitDTO) {
+    const index = active.findIndex((x) => x.id === h.id);
     setActive((p) => p.filter((x) => x.id !== h.id));
     const res = await archiveHabit(h.id);
     if (!res.ok) {
@@ -120,7 +135,7 @@ export default function HabitsList({
       return;
     }
     setArchived((p) => [{ ...h, archived: true }, ...p]);
-    toast.show("تمت أرشفة العادة", { action: { label: "تراجع", onClick: () => void restore(h, true) }, duration: 5000 });
+    toast.show("تمت أرشفة العادة", { action: { label: "تراجع", onClick: () => void restore(h, index) }, duration: 5000 });
   }
 
   return (

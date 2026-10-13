@@ -30,10 +30,14 @@ export function checkSvg(text: string, byteLength: number): string | null {
   if (!/<svg[\s>]/i.test(text)) return "الملف ليس SVG صالحاً";
   if (/<script/i.test(text)) return "ملف SVG يحتوي على سكربت";
   if (/<foreignObject/i.test(text)) return "ملف SVG يحتوي على عناصر غير مسموحة";
-  if (/<(iframe|embed|object|audio|video)\b/i.test(text)) return "ملف SVG يحتوي على عناصر غير مسموحة";
+  // <a>/<set>/<animate*> can rewrite href to a script URL; icons don't need them
+  if (/<(iframe|embed|object|audio|video|a|set|animate\w*|handler|listener)[\s/>]/i.test(text)) return "ملف SVG يحتوي على عناصر غير مسموحة";
+  // character references could hide "javascript:" or a handler name from the checks below
+  if (/&#|&(?!(amp|lt|gt|quot|apos);)\w+;/i.test(text)) return "ملف SVG يحتوي على ترميز غير مسموح";
   if (/<!(DOCTYPE|ENTITY)/i.test(text)) return "ملف SVG يحتوي على تعريفات غير مسموحة";
   // event handler attributes: onload=, onclick= … (preceded by whitespace, / or a quote)
-  if (/[\s/"']on[a-z]+\s*=/i.test(text)) return "ملف SVG يحتوي على أحداث غير مسموحة";
+  // also namespaced ones like x:onload=
+  if (/[\s/"':]on[a-z]+\s*=/i.test(text)) return "ملف SVG يحتوي على أحداث غير مسموحة";
   if (/javascript:/i.test(text)) return "ملف SVG يحتوي على روابط غير مسموحة";
   // href / xlink:href must point inside the document (#id)
   for (const m of text.matchAll(/(?:xlink:)?href\s*=\s*(["'])(.*?)\1/gis)) {
@@ -47,6 +51,11 @@ export function checkSvg(text: string, byteLength: number): string | null {
   if (/@import/i.test(text)) return "ملف SVG يشير إلى موارد خارجية";
   return null;
 }
+
+/** At most this many icon files per user; unreferenced ones are swept on upload. */
+export const MAX_ICON_FILES = 60;
+/** An unreferenced upload younger than this may still be in an open, unsaved form. */
+export const ORPHAN_GRACE_MS = 24 * 60 * 60 * 1000;
 
 /** Stored icon files are random hex names under habits/<uid>/. */
 export const ICON_FILE_RE = /^[a-f0-9]{24}\.(png|jpg|webp|svg)$/;

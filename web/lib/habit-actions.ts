@@ -1,7 +1,6 @@
 "use server";
 
 import { and, asc, eq, inArray, ne, sql } from "drizzle-orm";
-import { unlink } from "fs/promises";
 import { db, habits, habit_goals, habit_entries, mistakes, entry_mistakes, users } from "@/db";
 import { requireSession } from "@/lib/auth";
 import { loadUserTimezone } from "@/lib/data";
@@ -145,18 +144,6 @@ function cleanHabit(u: number, input: HabitInput): CleanHabit {
   };
 }
 
-/** Delete an icon file once no habit of this user points at it any more. */
-async function removeIconIfUnused(u: number, rel: string | null) {
-  if (!rel || !ownedIconPath(u, rel, rel.endsWith(".svg") ? "svg" : "image")) return;
-  const [{ n }] = await db
-    .select({ n: sql<number>`COUNT(*)` })
-    .from(habits)
-    .where(and(eq(habits.user_id, u), eq(habits.image_path, rel)));
-  if (Number(n) > 0) return;
-  const abs = safeDataPath(rel);
-  if (abs) await unlink(abs).catch(() => {});
-}
-
 export async function createHabit(input: HabitInput, clientToday?: string): Promise<Result<HabitDTO>> {
   return run(async () => {
     const { uid: u } = await ctx(clientToday);
@@ -165,18 +152,22 @@ export async function createHabit(input: HabitInput, clientToday?: string): Prom
       .select({ max: sql<number>`COALESCE(MAX(${habits.position}), -1)` })
       .from(habits)
       .where(eq(habits.user_id, u));
-    const [res] = await db.insert(habits).values({
-      user_id: u,
-      title: c.title, description: c.description, line_dirs: c.line_dirs,
-      icon_type: c.icon_type, emoji: c.emoji, image_path: c.image_path, bg_color: c.bg_color, fg_color: c.fg_color,
-      progress_type: c.progress_type, unit: c.unit, reminder_enabled: c.reminder_enabled,
-      start_date: c.start_date, position: Number(max ?? -1) + 1,
+    // habit + first goal together: a measured habit must never exist without a goal
+    const id = await db.transaction(async (tx) => {
+      const [res] = await tx.insert(habits).values({
+        user_id: u,
+        title: c.title, description: c.description, line_dirs: c.line_dirs,
+        icon_type: c.icon_type, emoji: c.emoji, image_path: c.image_path, bg_color: c.bg_color, fg_color: c.fg_color,
+        progress_type: c.progress_type, unit: c.unit, reminder_enabled: c.reminder_enabled,
+        start_date: c.start_date, position: Number(max ?? -1) + 1,
+      });
+      const newId = Number((res as { insertId: number }).insertId);
+      if (c.goal) {
+        // the first goal version covers the habit's whole history
+        await tx.insert(habit_goals).values({ user_id: u, habit_id: newId, ...c.goal, effective_from: c.start_date });
+      }
+      return newId;
     });
-    const id = Number((res as { insertId: number }).insertId);
-    if (c.goal) {
-      // the first goal version covers the habit's whole history
-      await db.insert(habit_goals).values({ user_id: u, habit_id: id, ...c.goal, effective_from: c.start_date });
-    }
     return habitDTO(u, id);
   });
 }
@@ -196,6 +187,8 @@ export async function updateHabit(id: number, input: HabitInput, clientToday?: s
       throw new UserError("لا يمكن تغيير نوع التقدّم بعد أول تسجيل");
     }
 
+    // the habit row and its goal versions change together or not at all
+    await db.transaction(async (db) => {
     await db.update(habits).set({
       title: c.title, description: c.description, line_dirs: c.line_dirs,
       icon_type: c.icon_type, emoji: c.emoji, image_path: c.image_path, bg_color: c.bg_color, fg_color: c.fg_color,
@@ -237,7 +230,9 @@ export async function updateHabit(id: number, input: HabitInput, clientToday?: s
       }
     }
 
-    if (h.image_path && h.image_path !== c.image_path) await removeIconIfUnused(u, h.image_path);
+    });
+    // a replaced icon file is not deleted here (an Undo or another open form may still use
+    // it); the upload route sweeps unreferenced files after a grace period
     return habitDTO(u, h.id);
   });
 }
@@ -259,8 +254,8 @@ export async function unarchiveHabit(id: number): Promise<Result<HabitDTO>> {
       .select({ max: sql<number>`COALESCE(MAX(${habits.position}), -1)` })
       .from(habits)
       .where(and(eq(habits.user_id, u), eq(habits.archived, false)));
-    // a restored habit returns to its old place unless that collides; append otherwise
-    const position = h.position <= Number(max ?? -1) ? h.position : Number(max ?? -1) + 1;
+    // a restored habit goes to the end: its old slot may belong to another habit by now
+    const position = Number(max ?? -1) + 1;
     await db.update(habits).set({ archived: false, position }).where(and(eq(habits.id, h.id), eq(habits.user_id, u)));
     return habitDTO(u, h.id);
   });

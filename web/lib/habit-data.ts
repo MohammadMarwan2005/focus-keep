@@ -117,11 +117,13 @@ export async function loadBoardHabits(uid: number, day: string): Promise<BoardHa
     .where(and(eq(habits.user_id, uid), eq(habits.archived, false), lte(habits.start_date, day)))
     .orderBy(asc(habits.position), asc(habits.id));
   if (!rows.length) return [];
-  const list = await hydrate(uid, rows);
-  const entries = await db
-    .select()
-    .from(habit_entries)
-    .where(and(eq(habit_entries.user_id, uid), eq(habit_entries.day, day), inArray(habit_entries.habit_id, rows.map((r) => r.id))));
+  const [list, entries] = await Promise.all([
+    hydrate(uid, rows),
+    db
+      .select()
+      .from(habit_entries)
+      .where(and(eq(habit_entries.user_id, uid), eq(habit_entries.day, day), inArray(habit_entries.habit_id, rows.map((r) => r.id)))),
+  ]);
   const mids = await mistakeIdsByEntry(uid, entries.map((e) => e.id));
   const byHabit = new Map(entries.map((e) => [e.habit_id, toEntryDTO(e, mids.get(e.id) ?? [])]));
   return list.map((h) => ({ ...h, entry: byHabit.get(h.id) ?? null }));
@@ -173,13 +175,16 @@ export async function loadCatchUp(uid: number, today: string): Promise<CatchUpBl
     ))
     .orderBy(asc(habits.position), asc(habits.id));
   if (!rows.length) return [];
-  const entries = await db
-    .select({ habit_id: habit_entries.habit_id, day: habit_entries.day })
-    .from(habit_entries)
-    .where(and(
-      eq(habit_entries.user_id, uid), inArray(habit_entries.habit_id, rows.map((r) => r.id)),
-      gte(habit_entries.day, oldest), lte(habit_entries.day, yesterday),
-    ));
+  const [entries, list] = await Promise.all([
+    db
+      .select({ habit_id: habit_entries.habit_id, day: habit_entries.day })
+      .from(habit_entries)
+      .where(and(
+        eq(habit_entries.user_id, uid), inArray(habit_entries.habit_id, rows.map((r) => r.id)),
+        gte(habit_entries.day, oldest), lte(habit_entries.day, yesterday),
+      )),
+    hydrate(uid, rows),
+  ]);
   const daysByHabit = new Map<number, Set<string>>();
   for (const e of entries) {
     const s = daysByHabit.get(e.habit_id) ?? new Set<string>();
@@ -187,7 +192,6 @@ export async function loadCatchUp(uid: number, today: string): Promise<CatchUpBl
     daysByHabit.set(e.habit_id, s);
   }
   const blocks: CatchUpBlock[] = [];
-  const list = await hydrate(uid, rows);
   for (const h of list) {
     const days = catchUpDays({ today, startDate: h.start_date, entryDays: daysByHabit.get(h.id) ?? new Set() });
     if (days.length) blocks.push({ habit: h, days });
