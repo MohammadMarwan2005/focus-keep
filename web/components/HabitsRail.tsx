@@ -195,11 +195,9 @@ function HabitRailItem({
               className="text-[11px] text-ink-soft tabular-nums hover:text-accent disabled:hover:text-ink-soft"
               title="أدخل القيمة"
             >
-              {/* numbers isolated LTR so "6 / ≥8" reads the same inside RTL text */}
-              <bdi dir="ltr">
-                {h.entry?.value != null ? fmtNum(h.entry.value) : "—"}
-                {goal ? ` / ${goal.goal_direction === "at_most" ? "≤" : "≥"}${fmtNum(goal.goal_value)}` : ""}
-              </bdi>
+              {/* "6 / 8 ساعات"; an at-most goal reads "حدّ 2". No ≥/≤: they mirror inside RTL text */}
+              {h.entry?.value != null ? fmtNum(h.entry.value) : "—"}
+              {goal ? ` / ${goal.goal_direction === "at_most" ? "حدّ " : ""}${fmtNum(goal.goal_value)}` : ""}
               {h.unit ? <bdi dir="auto"> {h.unit}</bdi> : null}
             </button>
           )}
