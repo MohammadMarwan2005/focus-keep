@@ -1,6 +1,7 @@
 import { and, eq, asc, desc } from "drizzle-orm";
-import { db, tasks, ideas } from "@/db";
+import { db, tasks, ideas, users } from "@/db";
 import { QUADRANTS, type Quadrant } from "@/db/schema";
+import { DEFAULT_TIMEZONE, isValidTimezone } from "@/lib/date";
 
 export type TaskRow = typeof tasks.$inferSelect;
 export type IdeaRow = typeof ideas.$inferSelect;
@@ -63,4 +64,10 @@ export async function loadDay(userId: number, day: string): Promise<DayData> {
   for (const t of taskRows) quadrants[t.quadrant].push(t);
 
   return { quadrants, ideas: ideaRows };
+}
+
+/** The user's IANA timezone, falling back to the default until one is stored. */
+export async function loadUserTimezone(userId: number): Promise<string> {
+  const [row] = await db.select({ tz: users.timezone }).from(users).where(eq(users.id, userId));
+  return row?.tz && isValidTimezone(row.tz) ? row.tz : DEFAULT_TIMEZONE;
 }

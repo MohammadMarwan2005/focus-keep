@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db, users } from "@/db";
+import { isValidTimezone } from "@/lib/date";
 import { COOKIE_NAME, signSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
-  const { username, password } = await req.json().catch(() => ({}));
+  const { username, password, timezone } = await req.json().catch(() => ({}));
   if (!username || !password) {
     return NextResponse.json({ error: "بيانات ناقصة" }, { status: 400 });
   }
@@ -15,6 +16,11 @@ export async function POST(req: NextRequest) {
   const [u] = await db.select().from(users).where(eq(users.username, String(username).trim()));
   if (!u || !(await bcrypt.compare(String(password), u.password_hash))) {
     return NextResponse.json({ error: "اسم المستخدم أو كلمة المرور غير صحيحة" }, { status: 401 });
+  }
+
+  // first login from a browser: remember its zone so habit days line up with the user's calendar
+  if (!u.timezone && typeof timezone === "string" && isValidTimezone(timezone)) {
+    await db.update(users).set({ timezone }).where(eq(users.id, u.id));
   }
 
   const token = await signSession({

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 import { db, users } from "@/db";
+import { isValidTimezone } from "@/lib/date";
 import { COOKIE_NAME, signSession } from "@/lib/auth";
 
 export const dynamic = "force-dynamic";
@@ -11,6 +12,7 @@ export async function POST(req: NextRequest) {
   const name = String(body.name ?? "").trim();
   const username = String(body.username ?? "").trim();
   const password = String(body.password ?? "");
+  const timezone = typeof body.timezone === "string" && isValidTimezone(body.timezone) ? body.timezone : null;
 
   if (!username || !password) {
     return NextResponse.json({ error: "بيانات ناقصة" }, { status: 400 });
@@ -33,6 +35,7 @@ export async function POST(req: NextRequest) {
     password_hash,
     name: name || username,
     role: "user",
+    timezone,
   });
   const uid = Number((res as { insertId: number }).insertId);
 

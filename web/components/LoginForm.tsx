@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { CloudSun, Eye, EyeOff } from "lucide-react";
 
+const browserTimezone = () => {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return undefined; }
+};
+
 export default function LoginForm() {
   const router = useRouter();
   const params = useSearchParams();
@@ -30,7 +34,7 @@ export default function LoginForm() {
     const res = await fetch("/api/auth/login", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username, password }),
+      body: JSON.stringify({ username, password, timezone: browserTimezone() }),
     });
     if (res.ok) {
       router.replace(next);

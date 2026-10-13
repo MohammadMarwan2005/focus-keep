@@ -5,6 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { CloudSun, Eye, EyeOff } from "lucide-react";
 
+const browserTimezone = () => {
+  try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch { return undefined; }
+};
+
 export default function SignupForm() {
   const router = useRouter();
   const [name, setName] = useState("");
@@ -29,7 +33,7 @@ export default function SignupForm() {
     const res = await fetch("/api/auth/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ name, username, password }),
+      body: JSON.stringify({ name, username, password, timezone: browserTimezone() }),
     });
     if (res.ok) {
       router.replace("/");

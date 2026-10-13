@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { loadDay } from "@/lib/data";
-import { todayISO } from "@/lib/date";
+import { loadDay, loadUserTimezone } from "@/lib/data";
+import { todayISOInTz } from "@/lib/date";
 import DayView from "@/components/DayView";
 
 export const dynamic = "force-dynamic";
@@ -15,7 +15,8 @@ export default async function Home({
   if (!session) redirect("/login");
 
   const sp = await searchParams;
-  const today = todayISO();
+  // today in the user's zone, not the server clock's (the box runs in UTC)
+  const today = todayISOInTz(await loadUserTimezone(session.uid));
   const day = /^\d{4}-\d{2}-\d{2}$/.test(sp.day || "") ? sp.day! : today;
 
   const data = await loadDay(session.uid, day);
