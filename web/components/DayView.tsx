@@ -60,7 +60,7 @@ function build(quadrants: Record<Quadrant, TaskRow[]>, ideas: IdeaRow[]): Cols {
 }
 
 export default function DayView({
-  day, today, name, initialQuadrants, initialIdeas, initialHabits,
+  day, today, name, initialQuadrants, initialIdeas, initialHabits, habitsCollapsed = false,
 }: {
   day: string;
   today: string;
@@ -69,6 +69,7 @@ export default function DayView({
   initialIdeas: IdeaRow[];
   /** null when the habit tables aren't available — the rail is hidden */
   initialHabits: BoardHabit[] | null;
+  habitsCollapsed?: boolean;
 }) {
   const router = useRouter();
   const { chime, whoosh, tick } = useSound();
@@ -456,7 +457,7 @@ export default function DayView({
         <main
           className={`flex-1 lg:min-h-0 w-full mx-auto px-4 py-4 grid gap-4 ${
             initialHabits
-              ? "max-w-7xl lg:grid-cols-[15rem_minmax(0,1fr)_15rem] xl:grid-cols-[17rem_minmax(0,1fr)_17rem]"
+              ? "max-w-7xl lg:grid-cols-[15rem_minmax(0,1fr)_auto] xl:grid-cols-[17rem_minmax(0,1fr)_auto]"
               : "max-w-6xl lg:grid-cols-[18rem_minmax(0,1fr)]"
           }`}
         >
@@ -486,8 +487,11 @@ export default function DayView({
             ))}
           </div>
 
-          {/* habits rail last in the DOM so, under RTL, it sits on the left (counterpart of ideas) */}
-          {initialHabits && <HabitsRail day={day} today={today} habits={initialHabits} />}
+          {/* habits rail last in the DOM so, under RTL, it sits on the left (counterpart of ideas);
+              its column is auto because the rail sets its own width, collapsed or open */}
+          {initialHabits && (
+            <HabitsRail day={day} today={today} habits={initialHabits} initialCollapsed={habitsCollapsed} />
+          )}
         </main>
       </div>
 

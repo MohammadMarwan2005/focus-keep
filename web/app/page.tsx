@@ -1,9 +1,11 @@
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { loadDay, loadUserTimezone } from "@/lib/data";
 import { todayISOInTz } from "@/lib/date";
 import { loadBoardHabits } from "@/lib/habit-data";
 import type { BoardHabit } from "@/lib/habits/dto";
+import { HABITS_RAIL_COOKIE } from "@/lib/habits/display";
 import DayView from "@/components/DayView";
 
 export const dynamic = "force-dynamic";
@@ -30,6 +32,9 @@ export default async function Home({
     console.error("habits unavailable", e);
   }
 
+  // read server-side so a collapsed rail doesn't flash open on load
+  const habitsCollapsed = (await cookies()).get(HABITS_RAIL_COOKIE)?.value === "collapsed";
+
   return (
     <DayView
       key={day}
@@ -39,6 +44,7 @@ export default async function Home({
       initialQuadrants={data.quadrants}
       initialIdeas={data.ideas}
       initialHabits={habits}
+      habitsCollapsed={habitsCollapsed}
     />
   );
 }

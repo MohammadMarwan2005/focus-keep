@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  Check, ChevronDown, Circle, ListChecks, MoreVertical, Plus, SkipForward, X, Eraser, ExternalLink,
+  Check, ChevronDown, Circle, ListChecks, MoreVertical, PanelLeftClose, PanelLeftOpen, Plus, SkipForward, X, Eraser, ExternalLink,
 } from "lucide-react";
 import { clearEntry, saveEntry } from "@/lib/habit-actions";
 import { todayISO } from "@/lib/date";
-import { evaluateDay, fmtNum, OUTCOME_LABEL, OUTCOME_STYLE } from "@/lib/habits/display";
+import { evaluateDay, fmtNum, HABITS_RAIL_COOKIE, OUTCOME_LABEL, OUTCOME_STYLE } from "@/lib/habits/display";
 import { resolveGoal } from "@/lib/habits/goals";
 import type { BoardHabit, EntryDTO } from "@/lib/habits/dto";
 import type { EntryStatus } from "@/lib/habits/types";
@@ -23,54 +23,111 @@ const rowBtnCls = "tap-target grid place-items-center rounded-lg text-ink-soft h
 /**
  * The habits rail: the left-hand counterpart of the ideas rail (under RTL).
  * Lists active habits for the board's day; this is the primary place to log.
+ * Collapsible: a slim icon strip on desktop, just the header on mobile.
  */
 export default function HabitsRail({
   day,
   today,
   habits,
+  initialCollapsed = false,
 }: {
   day: string;
   today: string;
   habits: BoardHabit[];
+  initialCollapsed?: boolean;
 }) {
   const [items, setItems] = useState(habits);
   useEffect(() => setItems(habits), [habits]);
+  const [collapsed, setCollapsed] = useState(initialCollapsed);
   const future = day > today;
 
   const setEntry = (habitId: number, entry: EntryDTO | null) =>
     setItems((p) => p.map((h) => (h.id === habitId ? { ...h, entry } : h)));
 
+  function toggle(next = !collapsed) {
+    setCollapsed(next);
+    document.cookie = `${HABITS_RAIL_COOKIE}=${next ? "collapsed" : "open"}; path=/; max-age=31536000; samesite=lax`;
+  }
+
   const doneCount = items.filter((h) => evaluateDay(h, h.entry, day).outcome === "success").length;
+  const count = items.length > 0 ? `${doneCount}/${items.length}` : "";
+  const toggleLabel = collapsed ? "إظهار العادات" : "طيّ العادات";
 
   return (
-    <section className="flex flex-col min-w-0 lg:h-full rounded-2xl border border-line bg-surface-2 p-3">
-      <header className="flex items-baseline justify-between gap-2 mb-2 px-1">
+    <section
+      className={`flex flex-col min-w-0 lg:h-full rounded-2xl border border-line bg-surface-2 transition-[width] ${
+        collapsed ? "p-2 lg:w-14" : "p-3 lg:w-[15rem] xl:w-[17rem]"
+      }`}
+    >
+      {/* collapsed on desktop: a slim strip of icons; each one opens the rail */}
+      {collapsed && (
+        <div className="hidden lg:flex flex-col items-center gap-2 min-h-0 h-full">
+          <button type="button" onClick={() => toggle(false)} aria-label={toggleLabel} title={toggleLabel} className={`${rowBtnCls} size-9`}>
+            <PanelLeftOpen size={18} aria-hidden />
+          </button>
+          {count && <span className="text-[11px] text-ink-soft tabular-nums">{count}</span>}
+          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar flex flex-col items-center gap-1.5">
+            {items.map((h) => {
+              const outcome = evaluateDay(h, h.entry, day).outcome;
+              return (
+                <button
+                  key={h.id}
+                  type="button"
+                  onClick={() => toggle(false)}
+                  aria-label={`${h.title}: ${OUTCOME_LABEL[outcome]}`}
+                  title={`${h.title}: ${OUTCOME_LABEL[outcome]}`}
+                  className={`grid place-items-center size-10 rounded-xl border transition hover:border-accent ${OUTCOME_STYLE[outcome]}`}
+                >
+                  <HabitIcon icon={h} size={24} />
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <header className={`flex items-center justify-between gap-2 px-1 ${collapsed ? "lg:hidden" : "mb-2"}`}>
         <h2 className="font-heading text-lg text-ink flex items-center gap-2">
           <ListChecks size={18} className="text-q-schedule-ink" aria-hidden /> عادات
         </h2>
-        <span className="text-xs text-ink-soft shrink-0">
-          {items.length > 0 ? `${doneCount}/${items.length}` : ""}
-          <Link href="/habits" className="ms-2 text-accent hover:underline underline-offset-2">إدارة</Link>
+        <span className="flex items-center gap-1 text-xs text-ink-soft shrink-0">
+          <span className="tabular-nums">{count}</span>
+          <Link href="/habits" className="ms-1 text-accent hover:underline underline-offset-2">إدارة</Link>
+          <button
+            type="button"
+            onClick={() => toggle()}
+            aria-expanded={!collapsed}
+            aria-label={toggleLabel}
+            title={toggleLabel}
+            className={`${rowBtnCls} size-7`}
+          >
+            <PanelLeftClose size={16} className="hidden lg:block" aria-hidden />
+            <ChevronDown size={16} className={`lg:hidden transition ${collapsed ? "" : "rotate-180"}`} aria-hidden />
+          </button>
         </span>
       </header>
 
-      {future && items.length > 0 && (
-        <p className="text-[11px] text-ink-soft px-1 mb-2">لا يمكن التسجيل في يومٍ لم يأتِ بعد.</p>
-      )}
+      {!collapsed && (
+        <>
+          {future && items.length > 0 && (
+            <p className="text-[11px] text-ink-soft px-1 mb-2">لا يمكن التسجيل في يومٍ لم يأتِ بعد.</p>
+          )}
 
-      <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar flex flex-col gap-2">
-        {items.map((h) => (
-          <HabitRailItem key={h.id} h={h} day={day} disabled={future} onEntry={(e) => setEntry(h.id, e)} />
-        ))}
-        {items.length === 0 && (
-          <div className="flex-1 grid place-items-center text-center text-ink-soft/70 text-sm py-3 gap-2">
-            <span>لا عادات لهذا اليوم</span>
-            <Link href="/habits" className="inline-flex items-center gap-1 text-accent text-xs hover:underline">
-              <Plus size={13} aria-hidden /> أضف عادة
-            </Link>
+          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar flex flex-col gap-2">
+            {items.map((h) => (
+              <HabitRailItem key={h.id} h={h} day={day} disabled={future} onEntry={(e) => setEntry(h.id, e)} />
+            ))}
+            {items.length === 0 && (
+              <div className="flex-1 grid place-items-center text-center text-ink-soft/70 text-sm py-3 gap-2">
+                <span>لا عادات لهذا اليوم</span>
+                <Link href="/habits" className="inline-flex items-center gap-1 text-accent text-xs hover:underline">
+                  <Plus size={13} aria-hidden /> أضف عادة
+                </Link>
+              </div>
+            )}
           </div>
-        )}
-      </div>
+        </>
+      )}
     </section>
   );
 }

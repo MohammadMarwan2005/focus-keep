@@ -8,6 +8,9 @@ export function evaluateDay(h: Pick<HabitDTO, "progress_type" | "goals">, entry:
   return evaluateEntry(h.progress_type, entry, resolveGoal(h.goals, day));
 }
 
+/** Cookie holding the board rail's open/collapsed state; read server-side to avoid a flash. */
+export const HABITS_RAIL_COOKIE = "habits_rail";
+
 /** "7.5" rather than "7.50"; keeps up to two decimals. */
 export const fmtNum = (n: number) => String(Number(n.toFixed(2)));
 
